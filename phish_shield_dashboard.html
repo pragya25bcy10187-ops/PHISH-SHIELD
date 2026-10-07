@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phish-Shield | Advanced Threat Intelligence & Phishing Analysis</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#0a0e17',
+                            card: '#111827',
+                            border: '#1f293d',
+                            accent: '#06b6d4',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e',
+                            purple: '#8b5cf6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        
+        body {
+            background-color: #080c14;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d131f;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+
+        .cyber-glass {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .cyber-glow {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+        }
+
+        .cyber-glow-danger {
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.2);
+        }
+
+        .scan-line {
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #06b6d4, transparent);
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        /* Meter gauge styling */
+        .gauge-meter {
+            transition: stroke-dashoffset 1s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-black">
+
+    <!-- Top Bar Navigation -->
+    <header class="sticky top-0 z-50 cyber-glass border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-cyan-950/80 border border-cyan-500/40 rounded-lg text-cyan-400">
+                        <i class="fa-solid fa-shield-halved text-2xl animate-pulse"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold tracking-wider text-white">PHISH<span class="text-cyan-400">-SHIELD</span></span>
+                        <span class="hidden sm:inline-block ml-2 text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">v2.4 SEC-INTEL</span>
+                    </div>
+                </div>
+
+                <!-- Desktop Nav Tabs -->
+                <nav class="hidden md:flex space-x-1">
+                    <button onclick="switchTab('scanner')" id="tab-scanner" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i> Scanner
+                    </button>
+                    <button onclick="switchTab('intel')" id="tab-intel" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-gray-400 hover:text-white hover:bg-gray-800/50">
+                        <i class="fa-solid fa-chart-line text-xs"></i> Live Intel
+                    </button>
+                    <button onclick="switchTab('lab')" id="tab-lab" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-gray-400 hover:text-white hover:bg-gray-800/50">
+                        <i class="fa-solid fa-flask text-xs"></i> Awareness Lab
+                    </button>
+                    <button onclick="switchTab('tools')" id="tab-tools" class="nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-gray-400 hover:text-white hover:bg-gray-800/50">
+                        <i class="fa-solid fa-toolbox text-xs"></i> Security Tools
+                    </button>
+                </nav>
+
+                <!-- Status & Quick Actions -->
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        Engine: Active
+                    </div>
+                    <button onclick="exportReportJSON()" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-xs font-medium rounded-lg border border-gray-700 text-gray-200 flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-download"></i> Export Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu Bar -->
+        <div class="md:hidden flex overflow-x-auto px-4 py-2 bg-gray-900/90 border-t border-gray-800 gap-2 scrollbar-none">
+            <button onclick="switchTab('scanner')" class="nav-btn-m flex-shrink-0 px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-500/10 text-cyan-400">Scanner</button>
+            <button onclick="switchTab('intel')" class="nav-btn-m flex-shrink-0 px-3 py-1.5 rounded-md text-xs font-medium text-gray-400">Live Intel</button>
+            <button onclick="switchTab('lab')" class="nav-btn-m flex-shrink-0 px-3 py-1.5 rounded-md text-xs font-medium text-gray-400">Awareness Lab</button>
+            <button onclick="switchTab('tools')" class="nav-btn-m flex-shrink-0 px-3 py-1.5 rounded-md text-xs font-medium text-gray-400">Security Tools</button>
+        </div>
+    </header>
+
+    <!-- Live Threat Feed Ticker Bar -->
+    <div class="bg-gray-950 border-b border-gray-800/80 text-xs py-2 px-4 overflow-hidden flex items-center">
+        <div class="flex items-center gap-2 font-mono text-rose-400 whitespace-nowrap pr-4 border-r border-gray-800 font-semibold uppercase tracking-wider">
+            <i class="fa-solid fa-triangle-exclamation animate-bounce"></i> Real-time Intercepts:
+        </div>
+        <div class="overflow-hidden relative w-full">
+            <div id="ticker-content" class="whitespace-nowrap animate-marquee flex gap-8 text-gray-400 font-mono text-xs">
+                <!-- Javascript will dynamically inject live threat items here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full">
+
+        <!-- TAB 1: SCANNER -->
+        <div id="section-scanner" class="tab-section space-y-6">
+            
+            <!-- Hero Search Input Section -->
+            <div class="cyber-glass rounded-2xl p-6 sm:p-8 border border-gray-800 relative overflow-hidden cyber-glow">
+                <div class="scan-line"></div>
+                <div class="max-w-3xl mx-auto text-center space-y-4">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                        Deep Domain & Zero-Day <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">Phishing Inspector</span>
+                    </h1>
+                    <p class="text-gray-400 text-sm max-w-xl mx-auto">
+                        Analyze URLs in real-time using pattern heuristics, typosquatting checks, entropy analysis, and SSL/WHOIS evaluation.
+                    </p>
+
+                    <!-- Search Input Box -->
+                    <div class="mt-6 flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-grow">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500">
+                                <i class="fa-solid fa-link text-base"></i>
+                            </div>
+                            <input type="text" id="target-url" placeholder="Enter target URL or domain (e.g. https://paypal-security-update.login-verify.com/login)" 
+                                class="w-full pl-11 pr-4 py-3.5 bg-gray-950/80 border border-gray-700 rounded-xl focus:outline-none focus:border-cyan-500 text-white placeholder-gray-500 text-sm font-mono transition">
+                        </div>
+                        <button onclick="analyzeURL()" class="px-7 py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-cyan-500/20 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-microscope text-sm"></i>
+                            <span>Scan Target</span>
+                        </button>
+                    </div>
+
+                    <!-- Preset Test URLs Buttons -->
+                    <div class="pt-2 flex flex-wrap justify-center items-center gap-2 text-xs text-gray-400">
+                        <span class="font-mono text-gray-500">Preset Demos:</span>
+                        <button onclick="presetScan('https://www.google.com')" class="px-2.5 py-1 rounded bg-gray-800/70 hover:bg-emerald-950/50 hover:text-emerald-400 border border-gray-700 text-gray-300 transition">Legitimate Domain</button>
+                        <button onclick="presetScan('https://accounts-google.security-login-verify.top/auth')" class="px-2.5 py-1 rounded bg-gray-800/70 hover:bg-rose-950/50 hover:text-rose-400 border border-gray-700 text-gray-300 transition">Phishing Spoof</button>
+                        <button onclick="presetScan('http://192.168.1.1/admin/paypal-update')" class="px-2.5 py-1 rounded bg-gray-800/70 hover:bg-amber-950/50 hover:text-amber-400 border border-gray-700 text-gray-300 transition">Raw IP Host</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scan Output Dashboard -->
+            <div id="scan-results" class="hidden space-y-6">
+                
+                <!-- Overview Header Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Score Gauge Card -->
+                    <div class="cyber-glass rounded-xl p-6 border border-gray-800 flex flex-col items-center justify-center text-center relative">
+                        <h3 class="text-xs uppercase font-mono tracking-wider text-gray-400 mb-2">Calculated Threat Index</h3>
+                        
+                        <!-- SVG Radial Gauge -->
+                        <div class="relative w-44 h-44 flex items-center justify-center">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                <path class="text-gray-800" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path id="gauge-path" class="gauge-meter text-emerald-500" stroke-dasharray="0, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            </svg>
+                            <div class="absolute flex flex-col items-center">
+                                <span id="gauge-score" class="text-4xl font-extrabold font-mono text-white">0</span>
+                                <span class="text-xs text-gray-400 font-mono">/ 100</span>
+                            </div>
+                        </div>
+
+                        <div id="risk-badge" class="mt-2 px-4 py-1.5 rounded-full text-xs font-bold font-mono tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            VERIFIED LOW RISK
+                        </div>
+                    </div>
+
+                    <!-- Target URL Overview & Executive Summary -->
+                    <div class="lg:col-span-2 cyber-glass rounded-xl p-6 border border-gray-800 space-y-4 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between pb-3 border-b border-gray-800">
+                                <span class="text-xs font-mono text-gray-400 uppercase">Target Endpoint Assessment</span>
+                                <span id="scan-timestamp" class="text-xs font-mono text-cyan-400">--:--:-- UTC</span>
+                            </div>
+
+                            <div class="mt-4 space-y-2">
+                                <div class="text-xs text-gray-400">Scanned Domain / URL:</div>
+                                <div id="display-scanned-url" class="p-3 bg-gray-950 rounded-lg border border-gray-800 font-mono text-sm text-cyan-300 break-all">
+                                    -
+                                </div>
+                            </div>
+
+                            <p id="executive-summary" class="mt-4 text-sm text-gray-300 leading-relaxed">
+                                Pending evaluation...
+                            </p>
+                        </div>
+
+                        <!-- Rapid Info Chips -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-gray-800/80">
+                            <div class="p-2.5 rounded-lg bg-gray-900/60 border border-gray-800">
+                                <div class="text-[10px] text-gray-400 uppercase font-mono">SSL Status</div>
+                                <div id="chip-ssl" class="text-xs font-semibold text-gray-200 mt-0.5">-</div>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-gray-900/60 border border-gray-800">
+                                <div class="text-[10px] text-gray-400 uppercase font-mono">TLD Risk Level</div>
+                                <div id="chip-tld" class="text-xs font-semibold text-gray-200 mt-0.5">-</div>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-gray-900/60 border border-gray-800">
+                                <div class="text-[10px] text-gray-400 uppercase font-mono">Domain Age</div>
+                                <div id="chip-age" class="text-xs font-semibold text-gray-200 mt-0.5">-</div>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-gray-900/60 border border-gray-800">
+                                <div class="text-[10px] text-gray-400 uppercase font-mono">Entropy Index</div>
+                                <div id="chip-entropy" class="text-xs font-semibold text-gray-200 mt-0.5">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deep Heuristic Breakdown Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    
+                    <!-- Heuristic Card 1 -->
+                    <div class="cyber-glass p-5 rounded-xl border border-gray-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-semibold text-gray-300">Brand Spoof / Typosquatting</span>
+                            <span id="h-brand-icon" class="text-emerald-400"><i class="fa-solid fa-circle-check"></i></span>
+                        </div>
+                        <p id="h-brand-desc" class="text-xs text-gray-400">No brand keyword confusion or typosquatting detected in host name.</p>
+                    </div>
+
+                    <!-- Heuristic Card 2 -->
+                    <div class="cyber-glass p-5 rounded-xl border border-gray-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-semibold text-gray-300">IP Host Name Structure</span>
+                            <span id="h-ip-icon" class="text-emerald-400"><i class="fa-solid fa-circle-check"></i></span>
+                        </div>
+                        <p id="h-ip-desc" class="text-xs text-gray-400">URL utilizes standard fully qualified domain name (FQDN).</p>
+                    </div>
+
+                    <!-- Heuristic Card 3 -->
+                    <div class="cyber-glass p-5 rounded-xl border border-gray-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-semibold text-gray-300">Subdomain Depth & Complexity</span>
+                            <span id="h-subdomain-icon" class="text-emerald-400"><i class="fa-solid fa-circle-check"></i></span>
+                        </div>
+                        <p id="h-subdomain-desc" class="text-xs text-gray-400">Subdomain structure is normal and within acceptable bounds.</p>
+                    </div>
+
+                    <!-- Heuristic Card 4 -->
+                    <div class="cyber-glass p-5 rounded-xl border border-gray-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-semibold text-gray-300">Suspicious Keywords in Path</span>
+                            <span id="h-keywords-icon" class="text-emerald-400"><i class="fa-solid fa-circle-check"></i></span>
+                        </div>
+                        <p id="h-keywords-desc" class="text-xs text-gray-400">No suspicious authentication triggers found in URL path.</p>
+                    </div>
+
+                    <!-- Heuristic Card 5 -->
+                    <div class="cyber-glass p-5 rounded-xl border border-gray-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-semibold text-gray-300">String Character Entropy</span>
+                            <span id="h-entropy-icon" class="text-emerald-400"><i class="fa-solid fa-circle-check"></i></span>
+                        </div>
+                        <p id="h-entropy-desc" class="text-xs text-gray-400">Randomness score is balanced, indicating non-generated strings.</p>
+                    </div>
+
+                    <!-- Heuristic Card 6 -->
+                    <div class="cyber-glass p-5 rounded-xl border border-gray-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-mono font-semibold text-gray-300">Protocol & Redirection Security</span>
+                            <span id="h-proto-icon" class="text-emerald-400"><i class="fa-solid fa-circle-check"></i></span>
+                        </div>
+                        <p id="h-proto-desc" class="text-xs text-gray-400">Uses modern encrypted HTTPS with valid TLS handshakes.</p>
+                    </div>
+                </div>
+
+                <!-- Deep Domain Inspection Panel (DNS, WHOIS, IP Geo) -->
+                <div class="cyber-glass rounded-xl border border-gray-800 overflow-hidden">
+                    <div class="bg-gray-900/80 px-6 py-4 border-b border-gray-800 flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-network-wired text-cyan-400"></i> Deep Domain & DNS Telemetry
+                        </h3>
+                        <span class="text-xs font-mono text-gray-400">Simulated WHOIS Probe</span>
+                    </div>
+
+                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 font-mono text-xs">
+                        
+                        <!-- WHOIS Box -->
+                        <div class="space-y-2 bg-gray-950 p-4 rounded-lg border border-gray-800/80">
+                            <div class="text-cyan-400 font-bold uppercase tracking-wider mb-2 border-b border-gray-800 pb-1">
+                                WHOIS Metadata
+                            </div>
+                            <div class="flex justify-between"><span class="text-gray-500">Registrar:</span> <span id="w-registrar" class="text-gray-300">NameCheap Inc.</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Created:</span> <span id="w-created" class="text-gray-300">2018-04-12</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Expires:</span> <span id="w-expires" class="text-gray-300">2027-04-12</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Country:</span> <span id="w-country" class="text-gray-300">US (United States)</span></div>
+                        </div>
+
+                        <!-- DNS Records -->
+                        <div class="space-y-2 bg-gray-950 p-4 rounded-lg border border-gray-800/80">
+                            <div class="text-cyan-400 font-bold uppercase tracking-wider mb-2 border-b border-gray-800 pb-1">
+                                DNS Record Entries
+                            </div>
+                            <div class="flex justify-between"><span class="text-gray-500">A Record:</span> <span id="dns-a" class="text-gray-300">104.21.48.12</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">MX Record:</span> <span id="dns-mx" class="text-gray-300">mail.protection.outlook.com</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">TXT (SPF):</span> <span id="dns-spf" class="text-emerald-400 truncate max-w-[150px]">v=spf1 include:_spf...</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">NS Authority:</span> <span id="dns-ns" class="text-gray-300">ns1.cloudflare.com</span></div>
+                        </div>
+
+                        <!-- Server Threat Intel -->
+                        <div class="space-y-2 bg-gray-950 p-4 rounded-lg border border-gray-800/80">
+                            <div class="text-cyan-400 font-bold uppercase tracking-wider mb-2 border-b border-gray-800 pb-1">
+                                Hosting & ASN Info
+                            </div>
+                            <div class="flex justify-between"><span class="text-gray-500">ASN:</span> <span id="geo-asn" class="text-gray-300">AS13335 CLOUDFLARE</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">IP Host Location:</span> <span id="geo-loc" class="text-gray-300">Ashburn, Virginia</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Blocklist Match:</span> <span id="intel-blocklist" class="text-emerald-400">0 / 68 Vendors</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Reputation Score:</span> <span id="intel-rep" class="text-emerald-400">Clean / Neutral</span></div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- TAB 2: LIVE INTEL -->
+        <div id="section-intel" class="tab-section hidden space-y-6">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-radar text-cyan-400"></i> Global Threat Intelligence Telemetry
+                    </h2>
+                    <p class="text-xs text-gray-400">Aggregated real-time metrics across monitored threat vectors.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-mono text-gray-400">Auto Refreshing</span>
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Global Analytics Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Chart 1: Threat Volume by Category -->
+                <div class="cyber-glass rounded-xl p-5 border border-gray-800 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-mono text-gray-300 uppercase font-semibold">Phishing Threat Distribution</h3>
+                        <span class="text-[10px] bg-gray-800 px-2 py-0.5 rounded text-cyan-400 font-mono">Last 24 Hours</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="chart-categories"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Top Targeted Brands -->
+                <div class="cyber-glass rounded-xl p-5 border border-gray-800 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-mono text-gray-300 uppercase font-semibold">Most Impersonated Brands</h3>
+                        <span class="text-[10px] bg-gray-800 px-2 py-0.5 rounded text-cyan-400 font-mono">Global Feed</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="chart-brands"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Blocked URL Feed Table -->
+            <div class="cyber-glass rounded-xl border border-gray-800 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/60">
+                    <h3 class="text-sm font-semibold text-white font-mono flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-rose-400"></i> Active Malicious URL Stream
+                    </h3>
+                    <span class="text-xs text-gray-400 font-mono">Updated 1s ago</span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left font-mono text-xs">
+                        <thead class="bg-gray-950 text-gray-400 uppercase text-[10px] border-b border-gray-800">
+                            <tr>
+                                <th class="py-3 px-4">Timestamp</th>
+                                <th class="py-3 px-4">Malicious Domain</th>
+                                <th class="py-3 px-4">Target Brand</th>
+                                <th class="py-3 px-4">Vector Category</th>
+                                <th class="py-3 px-4">Risk Level</th>
+                                <th class="py-3 px-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="intel-table-body" class="divide-y divide-gray-800/60 text-gray-300">
+                            <!-- Injected dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TAB 3: AWARENESS LAB -->
+        <div id="section-lab" class="tab-section hidden space-y-8">
+            
+            <div>
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-amber-400"></i> Phishing Awareness & Header Analyzer
+                </h2>
+                <p class="text-xs text-gray-400">Interactive training tools to identify spoofing techniques and email header manipulation.</p>
+            </div>
+
+            <!-- Email Header Inspector Tool -->
+            <div class="cyber-glass rounded-xl p-6 border border-gray-800 space-y-4">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                    <h3 class="text-sm font-semibold text-white flex items-center gap-2 font-mono">
+                        <i class="fa-solid fa-envelope-open-text text-cyan-400"></i> Interactive Email Sample Analyzer
+                    </h3>
+                    <span class="text-xs text-amber-400 font-mono"><i class="fa-solid fa-circle-info"></i> Click red flag markers to reveal spoof details</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Fake Email Client Render -->
+                    <div class="lg:col-span-2 bg-gray-950 rounded-xl border border-gray-800 p-5 space-y-4">
+                        
+                        <!-- Header details -->
+                        <div class="space-y-2 text-xs font-mono border-b border-gray-800 pb-4">
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-500 w-16">From:</span>
+                                <span class="text-white relative group cursor-pointer bg-rose-950/40 border border-rose-500/40 px-2 py-0.5 rounded text-rose-300" onclick="alertFlag('Spoofed Display Name', 'The display name claims to be PayPal Security, but the raw sending domain is @auth-verify-security.org.')">
+                                    PayPal Security &lt;service@auth-verify-security.org&gt; <i class="fa-solid fa-triangle-exclamation text-rose-400 text-[10px]"></i>
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-500 w-16">To:</span>
+                                <span class="text-gray-300">target-employee@company.com</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-gray-500 w-16">Subject:</span>
+                                <span class="text-rose-300 font-bold relative cursor-pointer bg-rose-950/40 border border-rose-500/40 px-2 py-0.5 rounded" onclick="alertFlag('Urgent Psychological Trigger', 'Phishers use artificial urgency like \'URGENT: Account Suspension in 2 Hours\' to cause panic and bypass critical thinking.')">
+                                    [URGENT] Immediate Account Suspension Notice - Action Required <i class="fa-solid fa-triangle-exclamation text-rose-400 text-[10px]"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Email Body -->
+                        <div class="text-xs text-gray-300 space-y-3 leading-relaxed">
+                            <p>Dear Valued Customer,</p>
+                            <p>We detected unauthorized login attempts to your account from an unrecognized IP address in Moscow, Russia.</p>
+                            <p class="p-3 bg-amber-950/20 border border-amber-500/30 rounded text-amber-300">
+                                Failure to verify your account credentials within 24 hours will result in permanent account lockup.
+                            </p>
+                            <div class="py-2">
+                                <a href="javascript:void(0)" onclick="alertFlag('Mismatched Hyperlink', 'The button text claims to go to PayPal, but hovering reveals the actual URL points to http://payp4l-login-check.com/reset.')" class="inline-block px-5 py-2.5 bg-blue-600 text-white rounded font-semibold text-xs shadow hover:bg-blue-500">
+                                    Verify Account Security Now &rarr;
+                                </a>
+                            </div>
+                            <p class="text-gray-500 text-[11px]">PayPal Risk Prevention Team</p>
+                        </div>
+                    </div>
+
+                    <!-- Red Flag Side Details -->
+                    <div class="cyber-glass rounded-xl p-4 border border-gray-800 space-y-3">
+                        <h4 class="text-xs font-mono text-cyan-400 uppercase font-semibold">Flagged Indicators</h4>
+                        
+                        <div id="flag-info-box" class="p-3 bg-gray-900 rounded-lg border border-gray-800 text-xs text-gray-300 space-y-2">
+                            <p class="text-gray-400 italic">Click any highlighted element in the email client to inspect why it was flagged by Phish-Shield analysis.</p>
+                        </div>
+
+                        <div class="space-y-2 pt-2 text-xs">
+                            <div class="p-2 bg-gray-900/60 rounded border border-gray-800 flex items-center justify-between">
+                                <span>Sender Domain Match</span>
+                                <span class="text-rose-400 font-mono font-bold">FAILED</span>
+                            </div>
+                            <div class="p-2 bg-gray-900/60 rounded border border-gray-800 flex items-center justify-between">
+                                <span>DKIM Signature</span>
+                                <span class="text-rose-400 font-mono font-bold">INVALID</span>
+                            </div>
+                            <div class="p-2 bg-gray-900/60 rounded border border-gray-800 flex items-center justify-between">
+                                <span>SPF Alignment</span>
+                                <span class="text-rose-400 font-mono font-bold">SOFTFAIL</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- "Spot the Phish" Mini-Quiz Module -->
+            <div class="cyber-glass rounded-xl p-6 border border-gray-800 space-y-6">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                    <h3 class="text-sm font-semibold text-white font-mono flex items-center gap-2">
+                        <i class="fa-solid fa-gamepad text-emerald-400"></i> Spot the Phish Interactive Challenge
+                    </h3>
+                    <span id="quiz-score" class="text-xs font-mono text-cyan-400 bg-cyan-950 px-3 py-1 rounded border border-cyan-800">
+                        Score: 0 / 0
+                    </span>
+                </div>
+
+                <div id="quiz-container" class="space-y-4">
+                    <!-- Dynamically populated quiz question -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TAB 4: SECURITY TOOLS -->
+        <div id="section-tools" class="tab-section hidden space-y-6">
+            
+            <div>
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-toolbox text-purple-400"></i> Utility Security Suite
+                </h2>
+                <p class="text-xs text-gray-400">Batch scanners, password entropy testing, and quishing (QR code) payload inspection.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Tool 1: Batch URL Scanner -->
+                <div class="cyber-glass rounded-xl p-6 border border-gray-800 space-y-4">
+                    <h3 class="text-sm font-semibold text-white font-mono flex items-center gap-2">
+                        <i class="fa-solid fa-list-ol text-cyan-400"></i> Bulk Batch URL Scanner
+                    </h3>
+                    <p class="text-xs text-gray-400">Paste multiple URLs (one per line) to perform batch heuristics.</p>
+                    
+                    <textarea id="batch-urls" rows="4" placeholder="https://example.com&#10;http://192.168.1.1/login&#10;https://appleid-verify.login-security.net" 
+                        class="w-full p-3 bg-gray-950 border border-gray-800 rounded-lg text-xs font-mono text-white focus:outline-none focus:border-cyan-500"></textarea>
+
+                    <button onclick="runBatchScan()" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg text-xs transition">
+                        Run Batch Scan
+                    </button>
+
+                    <div id="batch-results" class="hidden space-y-2 text-xs font-mono pt-2">
+                        <div class="text-gray-400 font-bold border-b border-gray-800 pb-1">Batch Inspection Output:</div>
+                        <div id="batch-output-list" class="space-y-1.5 max-h-48 overflow-y-auto pr-2">
+                            <!-- Batch items injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool 2: Password Entropy & Leak Simulator -->
+                <div class="cyber-glass rounded-xl p-6 border border-gray-800 space-y-4">
+                    <h3 class="text-sm font-semibold text-white font-mono flex items-center gap-2">
+                        <i class="fa-solid fa-key text-emerald-400"></i> Password Strength & Compromise Meter
+                    </h3>
+                    <p class="text-xs text-gray-400">Test password entropy locally without sending data across networks.</p>
+
+                    <input type="password" id="pass-input" oninput="checkPasswordStrength()" placeholder="Enter test password..." 
+                        class="w-full p-3 bg-gray-950 border border-gray-800 rounded-lg text-xs font-mono text-white focus:outline-none focus:border-emerald-500">
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-xs font-mono">
+                            <span class="text-gray-400">Entropy Score:</span>
+                            <span id="pass-rating" class="text-gray-400">-</span>
+                        </div>
+                        <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                            <div id="pass-bar" class="bg-rose-500 h-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+
+                    <div id="pass-feedback" class="text-xs text-gray-400 font-mono space-y-1">
+                        <!-- Password feedback tips -->
+                    </div>
+                </div>
+
+                <!-- Tool 3: QR Code (Quishing) Decoder Simulator -->
+                <div class="cyber-glass rounded-xl p-6 border border-gray-800 space-y-4 lg:col-span-2">
+                    <h3 class="text-sm font-semibold text-white font-mono flex items-center gap-2">
+                        <i class="fa-solid fa-qrcode text-amber-400"></i> Quishing Payload Decoder Simulator
+                    </h3>
+                    <p class="text-xs text-gray-400">Simulate reading embedded malicious links within physical or digital QR codes.</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <button onclick="simulateQR('https://m.banking.com/login')" class="p-4 bg-gray-950 border border-gray-800 hover:border-emerald-500/50 rounded-lg text-left space-y-1 transition">
+                            <div class="text-xs font-bold text-emerald-400">Safe QR Sample</div>
+                            <div class="text-[11px] text-gray-400 truncate">Legitimate Bank Portal</div>
+                        </button>
+                        <button onclick="simulateQR('http://qr-scan.my-rewards-claim.xyz/login.php')" class="p-4 bg-gray-950 border border-gray-800 hover:border-rose-500/50 rounded-lg text-left space-y-1 transition">
+                            <div class="text-xs font-bold text-rose-400">Quishing Attack Sample</div>
+                            <div class="text-[11px] text-gray-400 truncate">Suspicious Reward Claims</div>
+                        </button>
+                        <button onclick="simulateQR('https://bit.ly/3xX9aPz')" class="p-4 bg-gray-950 border border-gray-800 hover:border-amber-500/50 rounded-lg text-left space-y-1 transition">
+                            <div class="text-xs font-bold text-amber-400">Shortened URL Sample</div>
+                            <div class="text-[11px] text-gray-400 truncate">Obfuscated Redirect</div>
+                        </button>
+                    </div>
+
+                    <div id="qr-output" class="hidden p-4 bg-gray-950 rounded-lg border border-gray-800 text-xs font-mono space-y-2">
+                        <div class="text-cyan-400 font-bold">Decoded QR Payload:</div>
+                        <div id="qr-decoded-text" class="text-gray-200 break-all"></div>
+                        <div id="qr-analysis-badge" class="pt-2"></div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="cyber-glass border-t border-gray-800 mt-12 py-6 text-xs text-gray-500 font-mono">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield text-cyan-400"></i>
+                <span>Phish-Shield Defense Platform &copy; 2026. Defensive Security Research Engine.</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-server"></i> Engine Status: Operational</span>
+                <span>Client-Side Analysis</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Global Datasets & Simulated Intelligence Lists
+        const SUSPICIOUS_TLDS = ['.xyz', '.top', '.club', '.online', '.site', '.work', '.tk', '.ml', '.ga', '.cf', '.gq', '.zip', '.mov', '.cc', '.info'];
+        const BRAND_KEYWORDS = ['paypal', 'google', 'microsoft', 'apple', 'amazon', 'netflix', 'facebook', 'instagram', 'bank', 'secure', 'verify', 'account', 'login', 'support', 'update', 'signin', 'wallet', 'binance', 'coinbase'];
+        
+        let quizScore = 0;
+        let quizTotal = 0;
+        let categoriesChart = null;
+        let brandsChart = null;
+
+        // Sample Ticker Data
+        const tickerItems = [
+            { domain: 'paypaI-security-verify.top', target: 'PayPal', level: 'HIGH RISK' },
+            { domain: 'appleid-login-auth-service.xyz', target: 'Apple', level: 'MALICIOUS' },
+            { domain: 'metamask-wallet-recover.site', target: 'MetaMask', level: 'CRITICAL' },
+            { domain: 'microsoft365-password-reset.info', target: 'Microsoft', level: 'HIGH RISK' },
+            { domain: 'netflix-billing-update-check.online', target: 'Netflix', level: 'HIGH RISK' }
+        ];
+
+        // Sample Quiz Questions
+        const quizQuestions = [
+            {
+                title: "Question 1: Recognizing Spoofed Domain Names",
+                prompt: "Which of the following URLs represents the LEGITIMATE Microsoft portal?",
+                options: [
+                    { text: "https://login.microsoftonline.com/common/oauth2", correct: true, exp: "Correct! login.microsoftonline.com is an official Microsoft domain." },
+                    { text: "https://microsoft.login-verify-account.com/auth", correct: false, exp: "Incorrect! The primary domain here is login-verify-account.com, not Microsoft." },
+                    { text: "http://microsoft365-update.account-service.top", correct: false, exp: "Incorrect! Uses an untrusted TLD (.top) and HTTP protocol." }
+                ]
+            },
+            {
+                title: "Question 2: Identifying Email Header Red Flags",
+                prompt: "You receive an email from 'support@amaz0n-security.com' claiming your package is held. What is the primary red flag?",
+                options: [
+                    { text: "The typo 'amaz0n' with a zero replacing the letter 'o'.", correct: true, exp: "Correct! Typosquatting (using numbers for letters) is a classic phishing indicator." },
+                    { text: "The email uses HTTPS protocol.", correct: false, exp: "Incorrect! Emails don't use HTTPS protocols directly in address headers." },
+                    { text: "There are no red flags.", correct: false, exp: "Incorrect! The domain is fraudulent." }
+                ]
+            }
+        ];
+
+        window.onload = function() {
+            initTicker();
+            initCharts();
+            initQuiz();
+            // Automatically run a default scan demo for visual impact
+            presetScan('https://paypal-security-update.login-verify.top/auth/login');
+        };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = "nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-gray-400 hover:text-white hover:bg-gray-800/50";
+            });
+            document.querySelectorAll('.nav-btn-m').forEach(btn => {
+                btn.className = "nav-btn-m flex-shrink-0 px-3 py-1.5 rounded-md text-xs font-medium text-gray-400";
+            });
+
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "nav-btn px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30";
+            }
+        }
+
+        function initTicker() {
+            const container = document.getElementById('ticker-content');
+            let html = '';
+            tickerItems.forEach(item => {
+                html += `
+                    <span class="inline-flex items-center gap-2">
+                        <span class="text-rose-400 font-bold">${item.domain}</span>
+                        <span class="text-gray-500">Target: ${item.target}</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] bg-rose-950 text-rose-300 border border-rose-800 font-bold">${item.level}</span>
+                    </span>
+                    <span class="text-gray-700">|</span>
+                `;
+            });
+            container.innerHTML = html + html; // Duplicate for smooth looping
+        }
+
+        function presetScan(url) {
+            document.getElementById('target-url').value = url;
+            analyzeURL();
+        }
+
+        function analyzeURL() {
+            const rawUrl = document.getElementById('target-url').value.trim();
+            if (!rawUrl) return;
+
+            let urlObj;
+            try {
+                urlObj = new URL(rawUrl.startsWith('http') ? rawUrl : `http://${rawUrl}`);
+            } catch (e) {
+                alert('Please enter a valid URL format.');
+                return;
+            }
+
+            const hostname = urlObj.hostname.toLowerCase();
+            const fullPath = urlObj.href.toLowerCase();
+            const protocol = urlObj.protocol;
+
+            let score = 0;
+            let flags = [];
+
+            // 1. IP Host Check
+            const isIP = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
+            if (isIP) {
+                score += 35;
+                flags.push('Host uses raw IP address instead of domain name.');
+                updateCardUI('ip', 'danger', 'Raw IP detected as host string.', 'fa-circle-xmark');
+            } else {
+                updateCardUI('ip', 'success', 'Valid FQDN used.', 'fa-circle-check');
+            }
+
+            // 2. Suspicious TLD Check
+            const hasBadTLD = SUSPICIOUS_TLDS.some(tld => hostname.endsWith(tld));
+            if (hasBadTLD) {
+                score += 25;
+                flags.push('Domain uses high-risk suspicious TLD.');
+                document.getElementById('chip-tld').textContent = 'HIGH RISK';
+                document.getElementById('chip-tld').className = 'text-xs font-semibold text-rose-400 mt-0.5';
+            } else {
+                document.getElementById('chip-tld').textContent = 'STANDARD';
+                document.getElementById('chip-tld').className = 'text-xs font-semibold text-emerald-400 mt-0.5';
+            }
+
+            // 3. Brand Keyword Typosquatting
+            const matchedBrands = BRAND_KEYWORDS.filter(brand => hostname.includes(brand));
+            const isSubdomainSpoof = hostname.split('.').length > 3;
+            if (matchedBrands.length > 0 && isSubdomainSpoof) {
+                score += 30;
+                flags.push(`Possible brand typosquatting or impersonation detected (${matchedBrands.join(', ')}).`);
+                updateCardUI('brand', 'danger', `Brand impersonation indicator: ${matchedBrands.join(', ')}`, 'fa-circle-xmark');
+            } else {
+                updateCardUI('brand', 'success', 'No brand squatting detected.', 'fa-circle-check');
+            }
+
+            // 4. Subdomain Depth
+            const subparts = hostname.split('.');
+            if (subparts.length > 3) {
+                score += 15;
+                updateCardUI('subdomain', 'warning', `Excessive subdomain nesting (${subparts.length - 2} levels).`, 'fa-triangle-exclamation');
+            } else {
+                updateCardUI('subdomain', 'success', 'Normal subdomain depth.', 'fa-circle-check');
+            }
+
+            // 5. Keyword Triggers in Path
+            const pathTriggers = ['login', 'verify', 'update', 'banking', 'secure', 'account', 'password', 'credential'];
+            const foundPathTriggers = pathTriggers.filter(kw => fullPath.includes(kw));
+            if (foundPathTriggers.length >= 2) {
+                score += 20;
+                updateCardUI('keywords', 'danger', `Multiple auth triggers in path: ${foundPathTriggers.join(', ')}`, 'fa-circle-xmark');
+            } else {
+                updateCardUI('keywords', 'success', 'No suspicious auth triggers in path.', 'fa-circle-check');
+            }
+
+            // 6. Character Entropy Calculation
+            const entropy = calculateEntropy(hostname);
+            document.getElementById('chip-entropy').textContent = entropy.toFixed(2);
+            if (entropy > 3.8) {
+                score += 15;
+                updateCardUI('entropy', 'warning', `High string entropy (${entropy.toFixed(2)}) indicates possible DGA/random domain.`, 'fa-triangle-exclamation');
+            } else {
+                updateCardUI('entropy', 'success', 'Normal string entropy.', 'fa-circle-check');
+            }
+
+            // 7. Protocol Check
+            if (protocol !== 'https:') {
+                score += 20;
+                document.getElementById('chip-ssl').textContent = 'UNENCRYPTED (HTTP)';
+                document.getElementById('chip-ssl').className = 'text-xs font-semibold text-rose-400 mt-0.5';
+                updateCardUI('proto', 'danger', 'Target operates on unencrypted HTTP.', 'fa-circle-xmark');
+            } else {
+                document.getElementById('chip-ssl').textContent = 'VALID HTTPS';
+                document.getElementById('chip-ssl').className = 'text-xs font-semibold text-emerald-400 mt-0.5';
+                updateCardUI('proto', 'success', 'Uses modern encrypted HTTPS protocol.', 'fa-circle-check');
+            }
+
+            // Cap Score at 100
+            score = Math.min(score, 100);
+
+            // Render Output UI
+            document.getElementById('scan-results').classList.remove('hidden');
+            document.getElementById('display-scanned-url').textContent = fullPath;
+            document.getElementById('scan-timestamp').textContent = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+
+            // Animate Meter Gauge
+            const gaugePath = document.getElementById('gauge-path');
+            const scoreDisplay = document.getElementById('gauge-score');
+            const badge = document.getElementById('risk-badge');
+            const summary = document.getElementById('executive-summary');
+
+            gaugePath.style.strokeDasharray = `${score}, 100`;
+
+            // Counter animation
+            let current = 0;
+            const timer = setInterval(() => {
+                if (current >= score) {
+                    scoreDisplay.textContent = score;
+                    clearInterval(timer);
+                } else {
+                    current++;
+                    scoreDisplay.textContent = current;
+                }
+            }, 10);
+
+            // Risk Level Formatting
+            if (score >= 60) {
+                gaugePath.setAttribute('class', 'gauge-meter text-rose-500');
+                badge.className = 'mt-2 px-4 py-1.5 rounded-full text-xs font-bold font-mono tracking-wider uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30';
+                badge.textContent = 'CRITICAL PHISHING RISK';
+                summary.textContent = `High risk detected! Target exhibits multiple malicious indicators including suspicious domain patterns and credential harvesting triggers. Exercise extreme caution.`;
+            } else if (score >= 25) {
+                gaugePath.setAttribute('class', 'gauge-meter text-amber-500');
+                badge.className = 'mt-2 px-4 py-1.5 rounded-full text-xs font-bold font-mono tracking-wider uppercase bg-amber-500/10 text-amber-400 border border-amber-500/30';
+                badge.textContent = 'SUSPICIOUS / CAUTION';
+                summary.textContent = `Elevated risk indicators identified. While not conclusively confirmed malicious, the URL displays non-standard structural attributes.`;
+            } else {
+                gaugePath.setAttribute('class', 'gauge-meter text-emerald-500');
+                badge.className = 'mt-2 px-4 py-1.5 rounded-full text-xs font-bold font-mono tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+                badge.textContent = 'VERIFIED LOW RISK';
+                summary.textContent = `No suspicious domain anomalies, brand spoofing, or protocol violations detected. The destination appears legitimate.`;
+            }
+
+            // Simulated WHOIS updates based on risk
+            document.getElementById('chip-age').textContent = score > 40 ? '14 Days (New)' : '6+ Years';
+            document.getElementById('w-registrar').textContent = score > 40 ? 'NameCheap / RegPrivate' : 'MarkMonitor Inc.';
+            document.getElementById('w-created').textContent = score > 40 ? '2026-09-15' : '2015-03-22';
+            document.getElementById('intel-blocklist').textContent = score > 40 ? '14 / 68 Vendors' : '0 / 68 Vendors';
+            document.getElementById('intel-blocklist').className = score > 40 ? 'text-rose-400' : 'text-emerald-400';
+        }
+
+        function calculateEntropy(str) {
+            const len = str.length;
+            const frequencies = {};
+            for (let i = 0; i < len; i++) {
+                const char = str[i];
+                frequencies[char] = (frequencies[char] || 0) + 1;
+            }
+            return Object.values(frequencies).reduce((sum, count) => {
+                const p = count / len;
+                return sum - p * Math.log2(p);
+            }, 0);
+        }
+
+        function updateCardUI(key, status, text, iconClass) {
+            const iconEl = document.getElementById(`h-${key}-icon`);
+            const descEl = document.getElementById(`h-${key}-desc`);
+
+            if (!iconEl || !descEl) return;
+
+            descEl.textContent = text;
+            if (status === 'danger') {
+                iconEl.className = 'text-rose-400';
+                iconEl.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+            } else if (status === 'warning') {
+                iconEl.className = 'text-amber-400';
+                iconEl.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+            } else {
+                iconEl.className = 'text-emerald-400';
+                iconEl.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+            }
+        }
+
+        function initCharts() {
+            // Chart 1: Categories
+            const ctx1 = document.getElementById('chart-categories').getContext('2d');
+            categoriesChart = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Financial & Banking', 'Social Media', 'Executive Impersonation', 'Crypto Wallets', 'E-Commerce'],
+                    datasets: [{
+                        data: [38, 24, 18, 12, 8],
+                        backgroundColor: ['#06b6d4', '#8b5cf6', '#f59e0b', '#f43f5e', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Top Brands
+            const ctx2 = document.getElementById('chart-brands').getContext('2d');
+            brandsChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['Microsoft', 'PayPal', 'Apple', 'Google', 'MetaMask', 'Amazon'],
+                    datasets: [{
+                        label: 'Intercepted Campaigns',
+                        data: [420, 310, 280, 210, 190, 140],
+                        backgroundColor: '#06b6d4',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: '#1e293b' } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // Populate Intel Table
+            const tableBody = document.getElementById('intel-table-body');
+            const sampleIntel = [
+                { time: '12:44:02', domain: 'auth-verify-paypal-login.xyz', brand: 'PayPal', cat: 'Financial', level: 'HIGH' },
+                { time: '12:43:18', domain: 'office365-pass-reset.top', brand: 'Microsoft', cat: 'Executive', level: 'CRITICAL' },
+                { time: '12:41:55', domain: 'metamask-recover-seed.site', brand: 'MetaMask', cat: 'Crypto', level: 'CRITICAL' },
+                { time: '12:40:01', domain: 'apple-id-cloud-security.online', brand: 'Apple', cat: 'Social', level: 'MEDIUM' }
+            ];
+
+            let html = '';
+            sampleIntel.forEach(row => {
+                html += `
+                    <tr class="hover:bg-gray-900/50 transition">
+                        <td class="py-3 px-4 text-gray-400">${row.time}</td>
+                        <td class="py-3 px-4 text-cyan-300 font-bold">${row.domain}</td>
+                        <td class="py-3 px-4 text-gray-300">${row.brand}</td>
+                        <td class="py-3 px-4 text-gray-400">${row.cat}</td>
+                        <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">${row.level}</span></td>
+                        <td class="py-3 px-4 text-right">
+                            <button onclick="presetScan('https://${row.domain}')" class="text-xs text-cyan-400 hover:underline">Inspect</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        }
+
+        function alertFlag(title, description) {
+            const box = document.getElementById('flag-info-box');
+            box.innerHTML = `
+                <div class="text-cyan-400 font-bold font-mono uppercase border-b border-gray-800 pb-1 flex items-center gap-1.5">
+                    <i class="fa-solid fa-bug"></i> ${title}
+                </div>
+                <p class="text-xs text-gray-300 leading-relaxed pt-1">${description}</p>
+            `;
+        }
+
+        function initQuiz() {
+            quizTotal = quizQuestions.length;
+            renderQuizQuestion(0);
+        }
+
+        function renderQuizQuestion(index) {
+            const container = document.getElementById('quiz-container');
+            if (index >= quizQuestions.length) {
+                container.innerHTML = `
+                    <div class="p-6 text-center space-y-3 bg-gray-950 rounded-xl border border-gray-800">
+                        <i class="fa-solid fa-trophy text-3xl text-amber-400"></i>
+                        <h4 class="text-lg font-bold text-white">Challenge Completed!</h4>
+                        <p class="text-xs text-gray-400">Your Final Awareness Score: ${quizScore} / ${quizTotal}</p>
+                        <button onclick="quizScore=0; renderQuizQuestion(0);" class="mt-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-mono">Retake Challenge</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const q = quizQuestions[index];
+            let optionsHtml = '';
+            q.options.forEach((opt, optIndex) => {
+                optionsHtml += `
+                    <button onclick="submitAnswer(${index}, ${optIndex})" class="w-full p-3 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-lg text-left text-xs font-mono text-gray-200 transition">
+                        ${opt.text}
+                    </button>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="space-y-3">
+                    <h4 class="text-xs font-mono font-bold text-cyan-400 uppercase">${q.title}</h4>
+                    <p class="text-xs text-gray-300">${q.prompt}</p>
+                    <div class="space-y-2 pt-2">${optionsHtml}</div>
+                </div>
+            `;
+        }
+
+        function submitAnswer(qIndex, optIndex) {
+            const q = quizQuestions[qIndex];
+            const selected = q.options[optIndex];
+            
+            if (selected.correct) quizScore++;
+            document.getElementById('quiz-score').textContent = `Score: ${quizScore} / ${quizTotal}`;
+
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = `
+                <div class="p-4 rounded-xl border ${selected.correct ? 'bg-emerald-950/30 border-emerald-500/40' : 'bg-rose-950/30 border-rose-500/40'} space-y-3 font-mono text-xs">
+                    <div class="font-bold ${selected.correct ? 'text-emerald-400' : 'text-rose-400'}">
+                        ${selected.correct ? '✓ Correct Answer!' : '✗ Incorrect Evaluation'}
+                    </div>
+                    <p class="text-gray-300">${selected.exp}</p>
+                    <button onclick="renderQuizQuestion(${qIndex + 1})" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded text-xs">
+                        Next Question &rarr;
+                    </button>
+                </div>
+            `;
+        }
+
+        function runBatchScan() {
+            const text = document.getElementById('batch-urls').value.trim();
+            if (!text) return;
+
+            const urls = text.split('\n').filter(u => u.trim().length > 0);
+            const outputList = document.getElementById('batch-output-list');
+            outputList.innerHTML = '';
+
+            urls.forEach(u => {
+                const isBad = SUSPICIOUS_TLDS.some(t => u.includes(t)) || u.includes('192.168.') || u.includes('login');
+                const div = document.createElement('div');
+                div.className = `p-2 rounded border text-xs flex justify-between ${isBad ? 'bg-rose-950/30 border-rose-800 text-rose-300' : 'bg-emerald-950/30 border-emerald-800 text-emerald-300'}`;
+                div.innerHTML = `
+                    <span class="truncate max-w-[300px]">${u}</span>
+                    <span class="font-bold">${isBad ? 'SUSPICIOUS' : 'CLEAN'}</span>
+                `;
+                outputList.appendChild(div);
+            });
+
+            document.getElementById('batch-results').classList.remove('hidden');
+        }
+
+        function checkPasswordStrength() {
+            const pwd = document.getElementById('pass-input').value;
+            const bar = document.getElementById('pass-bar');
+            const rating = document.getElementById('pass-rating');
+            const feedback = document.getElementById('pass-feedback');
+
+            let score = 0;
+            if (pwd.length >= 8) score += 25;
+            if (pwd.length >= 12) score += 25;
+            if (/[A-Z]/.test(pwd)) score += 15;
+            if (/[0-9]/.test(pwd)) score += 15;
+            if (/[^A-Za-z0-9]/.test(pwd)) score += 20;
+
+            bar.style.width = `${score}%`;
+
+            if (score > 70) {
+                bar.className = 'bg-emerald-500 h-full transition-all duration-300';
+                rating.textContent = 'STRONG (High Entropy)';
+                rating.className = 'text-emerald-400 font-bold';
+                feedback.innerHTML = '<span class="text-emerald-400">✓ Excellent length and complexity. Resistant to brute-force dictionaries.</span>';
+            } else if (score > 35) {
+                bar.className = 'bg-amber-500 h-full transition-all duration-300';
+                rating.textContent = 'MODERATE';
+                rating.className = 'text-amber-400 font-bold';
+                feedback.innerHTML = '<span class="text-amber-400">! Consider adding special symbols or increasing length beyond 12 characters.</span>';
+            } else {
+                bar.className = 'bg-rose-500 h-full transition-all duration-300';
+                rating.textContent = 'WEAK / VULNERABLE';
+                rating.className = 'text-rose-400 font-bold';
+                feedback.innerHTML = '<span class="text-rose-400">✕ High risk of dictionary match. Add numbers, special characters, and length.</span>';
+            }
+        }
+
+        function simulateQR(payload) {
+            const out = document.getElementById('qr-output');
+            const text = document.getElementById('qr-decoded-text');
+            const badge = document.getElementById('qr-analysis-badge');
+
+            out.classList.remove('hidden');
+            text.textContent = payload;
+
+            const isRisky = payload.includes('xyz') || payload.includes('bit.ly') || payload.includes('my-rewards');
+            if (isRisky) {
+                badge.innerHTML = `<span class="px-2 py-1 bg-rose-950 text-rose-300 border border-rose-800 rounded text-[10px] font-bold">WARNING: SUSPICIOUS QUISHING PAYLOAD</span>`;
+            } else {
+                badge.innerHTML = `<span class="px-2 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded text-[10px] font-bold">VERIFIED LEGITIMATE QR TARGET</span>`;
+            }
+        }
+
+        function exportReportJSON() {
+            const url = document.getElementById('display-scanned-url').textContent;
+            const score = document.getElementById('gauge-score').textContent;
+            
+            const reportData = {
+                platform: "Phish-Shield Defense Engine",
+                timestamp: new Date().toISOString(),
+                scanned_target: url,
+                threat_score: score,
+                status: score > 40 ? "FLAGGED_SUSPICIOUS" : "VERIFIED_CLEAN"
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(reportData, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `PhishShield_Report_${Date.now()}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+    </script>
+</body>
+</html>

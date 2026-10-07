@@ -116,22 +116,39 @@ Phishing-Shield/
 Clone the Repository
 
 git clone https://github.com/YOUR-USERNAME/Phishing-Shield.git
+
 cd Phishing-Shield
+
 Run the Chrome Extension
+
 Open Chrome.
+
 Go to chrome://extensions/.
+
 Enable Developer Mode.
+
 Click Load unpacked.
+
 Select the extension folder.
+
 Open a website to test the detection system.
+
 🔮 Future Scope
+
 Advanced AI-powered detection
+
 Real-time threat-intelligence integration
+
 Support for multiple browsers
+
 Mobile browser protection
+
 Detection of newly created phishing websites
+
 Continuous machine-learning model improvement
+
 User reporting and feedback system
+
 ⚠️ Disclaimer
 
 Phishing Shield is a research and prototype project intended to assist users in identifying potentially suspicious websites. Detection results may not always be accurate, and users should remain cautious when sharing sensitive information online.

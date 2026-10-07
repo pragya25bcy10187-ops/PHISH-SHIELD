@@ -91,8 +91,11 @@ URL Analysis
 
 
 Phishing-Shield/
+
 │
+
 ├── extension/
+
 │   ├── manifest.json
 │   ├── background.js
 │   ├── content.js
@@ -100,15 +103,19 @@ Phishing-Shield/
 │   ├── popup.css
 │   └── popup.js
 │
+
 ├── website/
 │   ├── index.html
 │   ├── style.css
 │   └── script.js
 │
+
 ├── model/
 │
+
 ├── screenshots/
 │
+
 └── README.md
 
 🔧 Installation

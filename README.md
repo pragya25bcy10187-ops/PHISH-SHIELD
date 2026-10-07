@@ -29,18 +29,24 @@ The goal of Phishing Shield is to automatically identify suspicious websites and
 
 ⚙️ How It Works
 User opens/clicks a website
+
           ↓
      URL is captured
+     
           ↓
    URL & Website Analysis
+   
           ↓
    Phishing Detection Model
+   
           ↓
     ┌───────────┐
     │   SAFE    │ → Allow Access
+    
     └───────────┘
           OR
     ┌───────────┐
+    
     │ SUSPICIOUS│ → ⚠️ Warning
     └───────────┘
 
@@ -56,19 +62,34 @@ URL length and structure
 Domain information
 
 HTTPS/SSL status
+
 Suspicious characters and patterns
+
 Redirect behavior
+
 Hyperlinks
+
 Website characteristics
+
 Phishing-related URL features
+
 🛠️ Technologies Used
+
 HTML5
+
 CSS3
+
 JavaScript
+
 Chrome Extension API
+
 Machine Learning / AI
+
 URL Analysis
+
 📁 Project Structure
+
+
 Phishing-Shield/
 │
 ├── extension/
@@ -89,8 +110,11 @@ Phishing-Shield/
 ├── screenshots/
 │
 └── README.md
+
 🔧 Installation
+
 Clone the Repository
+
 git clone https://github.com/YOUR-USERNAME/Phishing-Shield.git
 cd Phishing-Shield
 Run the Chrome Extension

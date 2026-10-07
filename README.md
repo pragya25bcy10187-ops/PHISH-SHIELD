@@ -7,16 +7,25 @@ Phishing Shield is a real-time browser security solution that detects phishing a
 Phishing Shield is a real-time browser-based security system designed to detect phishing, fake, and malicious websites before users interact with them. It analyzes URLs and website characteristics and provides an instant warning when a potential threat is detected.
 
 🚀 Key Features
+
 🔍 Real-time phishing detection
+
 ⚠️ Warning before accessing suspicious websites
+
 🔗 URL and hyperlink analysis
+
 🌐 Browser-based protection
+
 🤖 AI/ML-based detection
+
 🛡️ Protection against fake and malicious websites
+
 💻 Simple and user-friendly interface
+
 🎯 Objective
 
 The goal of Phishing Shield is to automatically identify suspicious websites and warn users before they click or enter sensitive information, reducing the risk of phishing attacks, credential theft, and online scams.
+
 
 ⚙️ How It Works
 User opens/clicks a website
@@ -34,12 +43,18 @@ User opens/clicks a website
     ┌───────────┐
     │ SUSPICIOUS│ → ⚠️ Warning
     └───────────┘
+
+
+    
 🧠 Detection Features
+
 
 The system can analyze:
 
 URL length and structure
+
 Domain information
+
 HTTPS/SSL status
 Suspicious characters and patterns
 Redirect behavior

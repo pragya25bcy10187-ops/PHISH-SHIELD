@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishShield - Live Threat Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- Navigation Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-shield-halved text-blue-500 text-2xl"></i>
+                <span class="font-bold text-xl tracking-tight">PhishShield<span class="text-blue-500">.AI</span></span>
+            </div>
+            <div class="flex items-center space-x-2 text-sm text-slate-400">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>API Status: Live (Port 8000)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-6 space-y-8">
+        
+        <!-- Hero Section & Scanner Input -->
+        <section class="text-center space-y-4 py-6">
+            <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">Real-Time Threat URL Inspection</h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto">Analyze URLs against structural heuristics, Shannon domain entropy, keyword obfuscation, and spoofing indicators.</p>
+
+            <form id="scanForm" class="max-w-2xl mx-auto flex gap-2 pt-4">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+                    <input type="text" id="urlInput" required placeholder="https://login-verify-account.com/secure" 
+                        class="w-full pl-11 pr-4 py-3.5 bg-slate-900 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-mono">
+                </div>
+                <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3.5 rounded-xl flex items-center gap-2 transition-all">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>Analyze</span>
+                </button>
+            </form>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loader" class="hidden text-center py-12 space-y-3">
+            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-500"></i>
+            <p class="text-slate-400 font-medium">Extracting URL features & querying backend API...</p>
+        </div>
+
+        <!-- Scan Results Dashboard -->
+        <section id="results" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-slate-800 gap-4">
+                <div>
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Scanned Target</span>
+                    <h2 id="resUrl" class="text-lg font-mono font-semibold text-blue-400 break-all"></h2>
+                </div>
+                <div id="resBadge" class="self-start md:self-auto px-4 py-2 rounded-xl text-sm font-extrabold uppercase tracking-wide flex items-center gap-2"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Risk Score Card -->
+                <div class="bg-slate-950 p-5 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase">Risk Level</span>
+                    <div class="py-4 text-center">
+                        <span id="resScore" class="text-5xl font-extrabold">--</span>
+                        <span class="text-slate-500 text-lg">/100</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div id="scoreBar" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Feature Breakdown -->
+                <div class="bg-slate-950 p-5 rounded-xl border border-slate-800/80 md:col-span-2 space-y-3">
+                    <span class="text-xs font-semibold text-slate-500 uppercase">Feature Extraction Diagnostics</span>
+                    <div class="grid grid-cols-2 gap-3 text-sm pt-1">
+                        <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-400">Uses IP Host</span>
+                            <span id="featIp" class="font-mono">--</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-400">URL Shortener</span>
+                            <span id="featShort" class="font-mono">--</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-400">Subdomains</span>
+                            <span id="featSub" class="font-mono text-slate-200">--</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-400">Domain Entropy</span>
+                            <span id="featEntropy" class="font-mono text-slate-200">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const scanForm = document.getElementById('scanForm');
+        const urlInput = document.getElementById('urlInput');
+        const loader = document.getElementById('loader');
+        const results = document.getElementById('results');
+
+        scanForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const targetUrl = urlInput.value.trim();
+            if(!targetUrl) return;
+
+            loader.classList.remove('hidden');
+            results.classList.add('hidden');
+
+            try {
+                // Call Python API Backend
+                const response = await fetch('http://localhost:8000/api/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: targetUrl })
+                });
+
+                if(!response.ok) throw new Error('API Request Failed');
+
+                const data = await response.json();
+                displayResults(data.data);
+
+            } catch (error) {
+                alert('Could not connect to backend API on http://localhost:8000. Ensure app.py is running.');
+            } finally {
+                loader.classList.add('hidden');
+            }
+        });
+
+        function displayResults(data) {
+            results.classList.remove('hidden');
+            document.getElementById('resUrl').textContent = data.url;
+            document.getElementById('resScore').textContent = data.risk_score;
+            document.getElementById('scoreBar').style.width = `${data.risk_score}%`;
+
+            const badge = document.getElementById('resBadge');
+            if(data.status === 'MALICIOUS') {
+                badge.className = "self-start md:self-auto px-4 py-2 rounded-xl text-sm font-extrabold uppercase bg-red-500/10 text-red-400 border border-red-500/20";
+                badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Malicious Threat`;
+            } else if(data.status === 'SUSPICIOUS') {
+                badge.className = "self-start md:self-auto px-4 py-2 rounded-xl text-sm font-extrabold uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                badge.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Suspicious`;
+            } else {
+                badge.className = "self-start md:self-auto px-4 py-2 rounded-xl text-sm font-extrabold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Safe`;
+            }
+
+            document.getElementById('featIp').textContent = data.features.has_ip_address ? "Yes (High Risk)" : "No";
+            document.getElementById('featShort').textContent = data.features.is_url_shortener ? "Yes" : "No";
+            document.getElementById('featSub').textContent = data.features.subdomain_count;
+            document.getElementById('featEntropy').textContent = data.features.domain_entropy;
+        }
+    </script>
+</body>
+</html>
